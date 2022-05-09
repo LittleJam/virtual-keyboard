@@ -1,4 +1,22 @@
+let isCapsLock = false;
+let locale;
 let textareaBlock;
+
+const list_en = [
+    ["`", ..."1234567890-=", "backspace"],
+    ["tab", ..."qwertyuiop[]", " \\", "del"],
+    ["caps", ..."asdfghjkl;'", "enter"],
+    ["shift", ..."zxcvbnm,./", "▲", "shift"],
+    ["ctrl", "option", "cmd", "space", "cmd", "◄", "▼", "►", "option"],
+];
+
+const list_ru = [
+    ["`", ..."1234567890-=", "backspace"],
+    ["tab", ..."йцукенгшщзхъ", " \\", "del"],
+    ["caps", ..."фывапролджэ", "enter"],
+    ["shift", ..."ячсмитбю,.", "▲", "shift"],
+    ["ctrl", "option", "cmd", "space", "cmd", "◄", "▼", "►", "option"],
+];
 
 function createInputField() {
     const inputField = document.createElement("textarea");
@@ -26,14 +44,9 @@ function createKeyboardRow(row) {
     return row_parent;
 }
 
-function createKeyboard() {
-    const list = [
-        ["`", ..."1234567890-=", "backspace"],
-        ["tab", ..."qwertyuiop[]", " \\", "del"],
-        ["caps", ..."asdfghjkl;'", "enter"],
-        ["shift", ..."zxcvbnm,./", "▲", "shift"],
-        ["ctrl", "option", "cmd", "space", "cmd", "◄", "▼", "►", "option"],
-    ];
+function createKeyboard(list) {
+    const findKeyBoard = document.getElementsByClassName("keyboard");
+    if (findKeyBoard.length) findKeyBoard[0].remove();
     const keyboard = document.createElement("div");
 
     keyboard.className = "keyboard";
@@ -47,40 +60,90 @@ function createKeyboard() {
 }
 
 function getCustomKey(key) {
+    const caps = document.getElementsByClassName("btn_caps");
     switch (key) {
         case "Meta":
             return "cmd";
         case "Alt":
             return "option";
         case "CapsLock":
+            isCapsLock = !isCapsLock;
+            caps[0].classList.toggle("active");
+            return "caps";
+        case "caps":
+            isCapsLock = !isCapsLock;
+            caps[0].classList.toggle("active");
             return "caps";
         case "Control":
             return "ctrl";
+        case "Enter":
+            onEnterButton();
+            return "enter";
+        case "enter":
+            onEnterButton();
+            return "enter";
+        case "Tab":
+            onTab();
+            return "tab";
+        case "tab":
+            onTab();
+            return "tab";
+        case "space":
+            onSpace();
+            return "tab";
+        case "ArrowLeft":
+            return "◄";
+        case "ArrowRight":
+            return "►";
+        case "ArrowDown":
+            return "▼";
+        case "ArrowUp":
+            return "▲";
         default:
             return "space";
     }
 }
 
-function onKeyPress(e) {
-    textareaBlock.focus();
-
-    const { key } = e;
-    e.preventDefault();
-    let keyName = key.toLowerCase();
-
+function checkCustomButton(key, event) {
     if (
         key === "Meta" ||
         key === "Alt" ||
         key === "CapsLock" ||
+        key === "caps" ||
         key === "Control" ||
+        key === "Tab" ||
+        key === "tab" ||
+        key === "enter" ||
+        key === "Enter" ||
+        key === "ArrowUp" ||
+        key === "ArrowDown" ||
+        key === "ArrowLeft" ||
+        key === "ArrowRight" ||
+        key === "space" ||
         key === " "
     ) {
-        keyName = getCustomKey(key);
+        return getCustomKey(key);
+    } else {
+        if (event && !event.metaKey && key !== "Backspace" && key !== "Enter")
+            event.preventDefault();
+        return event && event.shiftKey ? key : key.toLowerCase();
     }
+}
+
+function onKeyPress(event) {
+    textareaBlock.focus();
+
+    if (event.ctrlKey && event.altKey) {
+        setLocale(locale === "en" ? "ru" : "en");
+        locale = locale === "en" ? "ru" : "en";
+        return;
+    }
+
+    let keyName = checkCustomButton(event.key, event);
 
     const button = document.getElementsByClassName(`btn_${keyName}`);
 
-    if (button.length) {
+    if (button.length && keyName !== "caps") {
         button[0].classList.add("active");
 
         setTimeout(() => {
@@ -88,9 +151,8 @@ function onKeyPress(e) {
         }, 250);
     }
 
-    if (key.length === 1) setTextArea(key);
-
-    if (key === "backspace") onBackSpace();
+    if (keyName.length === 1)
+        setTextArea(isCapsLock ? keyName.toUpperCase() : keyName);
 }
 
 function onBackSpace() {
@@ -98,8 +160,45 @@ function onBackSpace() {
     textareaBlock.value = content.substring(0, content.length - 1);
 }
 
+function onEnterButton() {
+    const text = textareaBlock.value;
+    const position = textareaBlock.selectionStart;
+    let start = text.slice(0, position);
+    let end = text.slice(position);
+    textareaBlock.value = `${start}\n${end}`;
+    textareaBlock.focus();
+}
+
+function onTab() {
+    const text = textareaBlock.value;
+    const position = textareaBlock.selectionStart;
+    let start = text.slice(0, position);
+    let end = text.slice(position);
+    textareaBlock.value = `${start}  ${end}`;
+    textareaBlock.focus();
+}
+
+function onSpace() {
+    const text = textareaBlock.value;
+    const position = textareaBlock.selectionStart;
+    let start = text.slice(0, position);
+    let end = text.slice(position);
+    textareaBlock.value = `${start} ${end}`;
+    textareaBlock.focus();
+}
+
 function setTextArea(text) {
     const content = textareaBlock.value;
+
+    if (locale === "ru") {
+        const arrIndex = list_en.findIndex((el) => el.includes(text));
+        if (arrIndex !== -1) {
+            const index = list_en[arrIndex].findIndex((el) => el === text);
+            textareaBlock.value = content + list_ru[arrIndex][index];
+            return;
+        }
+    }
+
     textareaBlock.value = content + text;
 }
 
@@ -108,22 +207,38 @@ function onClick(e) {
     const { target } = e;
     if (target) {
         const isButton = target.className.includes("btn");
-
         if (isButton) {
+            const key = checkCustomButton(target.innerText);
             if (target.innerText === "backspace") {
                 onBackSpace();
             } else {
-                setTextArea(target.innerText);
+                if (key.length === 1)
+                    setTextArea(isCapsLock ? key.toUpperCase() : key);
             }
         }
     }
 }
 
-function initialFunc() {
-    createInputField();
-    createKeyboard();
-    textareaBlock = document.getElementById("field");
-    document.body.addEventListener("keyup", onKeyPress);
+function setLocale(lang) {
+    localStorage.setItem("locale", lang);
+    createKeyboard(lang === "en" ? list_en : list_ru);
 }
 
+function initialFunc() {
+    const currentLocale = localStorage.getItem("locale");
+    const text = document.createElement("h3");
+    text.innerText = "клавиатура создана воперационной системе MacOS";
+    document.body.appendChild(text);
+
+    const subtitle = document.createElement("h3");
+    subtitle.innerText =
+        "комбинация для переключения языка: левые ctrl + option";
+    document.body.appendChild(subtitle);
+
+    createInputField();
+    setLocale(currentLocale ? currentLocale : "en");
+    locale = currentLocale ? currentLocale : "en";
+    textareaBlock = document.getElementById("field");
+    document.body.addEventListener("keydown", onKeyPress);
+}
 initialFunc();
