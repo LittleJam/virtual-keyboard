@@ -12,11 +12,12 @@ body {
     margin-top: 10%;
 }
 .keyboard {
-    width: 45%;
+    width: 52%;
     margin: 0 auto;
     margin-top: 20px;
     border: 4px solid #808080;
     padding: 5px;
+    background: #404040;
 }
 .btn {
     margin: 2px;
@@ -35,4 +36,17 @@ body {
 
 .btn.active {
     background: #206040;
+}
+
+.btn_caps,
+.btn_shift,
+.btn_enter,
+.btn_backspace {
+    width: 94px;
+}
+.btn_cmd {
+    width: 64px;
+}
+.btn_space {
+    width: 300px;
 }

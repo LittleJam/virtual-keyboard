@@ -2,7 +2,6 @@ let textareaBlock;
 
 function createInputField() {
     const inputField = document.createElement("textarea");
-    inputField.addEventListener("keypress", onKeyPress);
     inputField.id = "field";
     inputField.className = "text";
     inputField.setAttribute("rows", 10);
@@ -29,10 +28,11 @@ function createKeyboardRow(row) {
 
 function createKeyboard() {
     const list = [
-        ["`", ..."1234567890-="],
-        ["tab", ..."qwertyuiop[]"],
+        ["`", ..."1234567890-=", "backspace"],
+        ["tab", ..."qwertyuiop[]", " \\", "del"],
         ["caps", ..."asdfghjkl;'", "enter"],
-        ["shift", ..."zxcvbnm,./", "shift"],
+        ["shift", ..."zxcvbnm,./", "▲", "shift"],
+        ["ctrl", "option", "cmd", "space", "cmd", "◄", "▼", "►", "option"],
     ];
     const keyboard = document.createElement("div");
 
@@ -46,10 +46,39 @@ function createKeyboard() {
     document.body.appendChild(keyboard);
 }
 
+function getCustomKey(key) {
+    switch (key) {
+        case "Meta":
+            return "cmd";
+        case "Alt":
+            return "option";
+        case "CapsLock":
+            return "caps";
+        case "Control":
+            return "ctrl";
+        default:
+            return "space";
+    }
+}
+
 function onKeyPress(e) {
+    textareaBlock.focus();
+
     const { key } = e;
-    console.log(key);
-    const button = document.getElementsByClassName(`btn_${key}`);
+    e.preventDefault();
+    let keyName = key.toLowerCase();
+
+    if (
+        key === "Meta" ||
+        key === "Alt" ||
+        key === "CapsLock" ||
+        key === "Control" ||
+        key === " "
+    ) {
+        keyName = getCustomKey(key);
+    }
+
+    const button = document.getElementsByClassName(`btn_${keyName}`);
 
     if (button.length) {
         button[0].classList.add("active");
@@ -58,17 +87,34 @@ function onKeyPress(e) {
             button[0].classList.remove("active");
         }, 250);
     }
+
+    if (key.length === 1) setTextArea(key);
+
+    if (key === "backspace") onBackSpace();
+}
+
+function onBackSpace() {
+    const content = textareaBlock.value;
+    textareaBlock.value = content.substring(0, content.length - 1);
+}
+
+function setTextArea(text) {
+    const content = textareaBlock.value;
+    textareaBlock.value = content + text;
 }
 
 function onClick(e) {
     e.stopPropagation();
     const { target } = e;
-    console.log(target);
     if (target) {
         const isButton = target.className.includes("btn");
-        const content = textareaBlock.innerHTML;
+
         if (isButton) {
-            textareaBlock.innerHTML = content + target.innerHTML;
+            if (target.innerText === "backspace") {
+                onBackSpace();
+            } else {
+                setTextArea(target.innerText);
+            }
         }
     }
 }
@@ -77,6 +123,7 @@ function initialFunc() {
     createInputField();
     createKeyboard();
     textareaBlock = document.getElementById("field");
+    document.body.addEventListener("keyup", onKeyPress);
 }
 
 initialFunc();
